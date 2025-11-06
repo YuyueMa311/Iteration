@@ -1,5 +1,440 @@
 ---
 title: "Iteration and List Columns"
-output: githubl_document
+output: github_document
 ---
+
+```{r}
+library(tidyverse)
+library(rvest)
+
+set.seed(1)
+```
+
+
+## Lists
+
+```{r}
+vec_numeric = 5:8
+vec_char = c("My", "name", "is", "Jeff")
+vec_logical = c(TRUE, TRUE, TRUE, FALSE)
+```
+
+```{r}
+l = list(
+  vec_numeric = 5:8,
+  mat         = matrix(1:8, 2, 4),
+  vec_logical = c(TRUE, FALSE),
+  summary     = summary(rnorm(1000)))
+l
+```
+Lists can be accessed using names or indices,
+`$` extract things from list, generally avoid to.
+```{r}
+l$vec_numeric
+```
+
+```{r}
+l[[1]]
+```
+
+```{r}
+l[[1]][1:3]
+```
+
+
+## `for` loops
+
+Make a different list
+```{r}
+list_norms = 
+  list(
+    a = rnorm(20, 3, 1),
+    b = rnorm(20, 0, 5),
+    c = rnorm(20, 10, .2),
+    d = rnorm(20, -3, 1)
+  )
+
+is.list(list_norms)
+```
+
+Use function from last class again:
+```{r}
+mean_and_sd = function(x) {
+  
+  if (!is.numeric(x)) {
+    stop("Argument x should be numeric")
+  } else if (length(x) == 1) {
+    stop("Cannot be computed for length 1 vectors")
+  }
+  
+  mean_x = mean(x)
+  sd_x = sd(x)
+
+  tibble(
+    mean = mean_x, 
+    sd = sd_x
+  )
+}
+```
+
+Apply function to the lists:
+```{r}
+mean_and_sd(list_norms[[1]])
+```
+
+```{r}
+mean_and_sd(list_norms[[2]])
+```
+
+```{r}
+mean_and_sd(list_norms[[3]])
+```
+
+```{r}
+mean_and_sd(list_norms[[4]])
+```
+
+Use a loop to iterate:
+```{r}
+output = vector("list", length = 4) # define output as a type of list with length of 4
+
+
+for (i in 1:4) {
+  output[[i]] = mean_and_sd(list_norms[[i]])
+}
+output
+```
+
+
+##`map`
+
+Use map to do the same thing
+```{r}
+output = map(list_norms, mean_and_sd)
+      # map (the input list, function)
+
+output
+```
+
+```{r}
+output = vector("list", length = 4)
+
+for (i in 1:4) {
+  output[[i]] = median(list_norms[[i]])
+}
+
+output = map(list_norms, median)
+output
+```
+
+
+## `map` variants
+
+Use `map_dbl` because median outputs a *single* numeric value each time; the result is a vector instead of a list. 
+Using the `.id` argument keeps the names of the elements(a/b/c/d) in the input list.
+```{r}
+output = map_dbl(list_norms, median, .id = "input")
+output
+```
+If we tried to use `map_int` or `map_lgl`, we’d get an error because the output of median isn’t a integer or a logical. This is a good way to help catch mistakes when they arise.
+
+
+Use the output-specific `map_dfr`; this will produce a single data frame, with `input` column of list.
+```{r}
+output = map_dfr(list_norms, mean_and_sd, .id = "input")
+output
+```
+The `map_df` variants can be helpful when your map statement is part of a longer chain of piped commands.
+
+
+The variant `map2` (and `map2_dbl`, etc) is helpful when your function has two arguments.
+`
+output = map2(input_1, input_2, \(x,y) func(arg_1 = x, arg_2 = y))
+output
+`
+
+
+## Lists columns and operations
+
+Try to put my list into a dataframe.
+```{r}
+listcol_df = 
+  tibble(
+    name = c("a", "b", "c", "d"),
+    samp = list_norms
+  )
+```
+
+Check if the list is working?
+```{r}
+listcol_df |> pull(name)
+```
+
+```{r}
+listcol_df |> pull(samp)
+```
+Examine the first list entry using usual list index 
+```{r}
+pull(listcol_df, samp)[[1]]
+```
+
+Apply mean_and_sd to the first element of our list column.
+```{r}
+mean_and_sd(pull(listcol_df, samp)[[1]])
+```
+
+`pull(listcol_df, samp)` is a list. 
+Iterate mean_and_sd function to each element using `map`
+```{r}
+map(pull(listcol_df, samp), mean_and_sd)
+```
+The `map` function returns a list; we could store the results as a new list column
+
+Using `mutate` to define a new variable in a data frame/add a column, especially one that is a function of an existing variable
+```{r}
+listcol_df = 
+  listcol_df |> 
+  mutate(summary = map(samp, mean_and_sd))
+
+listcol_df
+```
+`summary` column has list of mean and sd in `tibble` form.
+
+Pull out `summary` column to check
+```{r}
+pull(listcol_df, summary)
+```
+`unnest` a particular column in the dataframe. 
+```{r}
+listcol_df |>
+  select(-samp) |>
+  unnest(summary)
+```
+
+
+
+## Revisiting NSDUH
+
+
+```{r}
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+nsduh_table <- function(html, table_num) {
+  
+  table = 
+    html |> 
+    html_table() |> 
+    nth(table_num) |>
+    slice(-1) |> 
+    select(-contains("P Value")) |>
+    pivot_longer(
+      -State,
+      names_to = "age_year", 
+      values_to = "percent") |>
+    separate(age_year, into = c("age", "year"), sep = "\\(") |>
+    mutate(
+      year = str_replace(year, "\\)", ""),
+      percent = str_replace(percent, "[a-c]$", ""),
+      percent = as.numeric(percent)) |>
+    filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+  
+  table
+}
+
+```
+
+Try with a `for` loop:
+```{r}
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+output = vector("list", 3)
+
+for (i in c(1, 4, 5)) {
+  output[[i]] = nsduh_table(nsduh_html, i)
+}
+
+nsduh_results = bind_rows(output)
+output
+```
+
+Do this with `map`
+```{r}
+nsduh_results = 
+  map(c(1, 4, 5), nsduh_table, html = nsduh_html) |> 
+  bind_rows()
+nsduh_results
+```
+
+Do this all in a dataframe
+```{r}
+nsduh_results= 
+  tibble(
+    name = c("marj", "cocaine", "heroine"), #name each table
+    number = c(1, 4, 5)) |> 
+  mutate(table = map(number, nsduh_table, html = nsduh_html)) |> 
+  unnest(cols = "table")
+
+nsduh_results
+```
+
+An alternative way to accomplish this is to use map’s syntax for “anonymous” (i.e. not named and saved) functions. Indicating that the only argument to care about is `num` and then passing that into `nsduh_html`.
+```{r}
+nsduh_results= 
+  tibble(
+    name = c("marj", "cocaine", "heroine"),
+    number = c(1, 4, 5)) |> 
+  mutate(
+    table = map(number, \(num) nsduh_table(html = nsduh_html, num))) |> 
+  unnest(cols = "table")
+
+nsduh_results
+```
+
+
+## Operations on nested data
+
+
+```{r}
+library(p8105.datasets)
+data("weather_df")
+```
+
+Weather data will be separated into three station-specific data frames, each of which is the data “observation” for the respective station.
+```{r}
+weather_nest = 
+  nest(weather_df, data = date:tmin)
+
+weather_nest
+```
+
+Different way of producing a `list` column. The result is a lot like `listcol_df`, in that the columns in weather_nest are a vector(for name) and a list(for data).
+```{r}
+weather_nest |> pull(name)
+```
+
+```{r}
+weather_nest |> pull(data)
+```
+
+If you can `nest` data you should be able to `unnest` it as well, and you can (with the caveat that you’re unnesting a list column that contains a data frame).
+```{r}
+unnest(weather_nest, cols = data)
+```
+
+
+Let's do a simple regression:
+```{r}
+weather_df |>
+  filter(name == "CentralPark_NY") |>
+  lm(tmax ~ tmin, data = _)
+
+weather_df |>
+  filter(name == "Molokai_HI") |>
+  lm(tmax ~ tmin, data = _)
+
+weather_df |>
+  filter(name == "Waterhole_WA") |>
+  lm(tmax ~ tmin, data = _)
+```
+
+Instead, let's iterate differently:
+
+Fit the simple linear regression relating `tmax` to `tmin` for each station-specific data frame.
+```{r}
+weather_lm = function(df) {
+  lm(tmax ~ tmin, data = df)
+}
+```
+
+Let’s make sure this works on a single data frame.
+```{r}
+weather_lm(pull(weather_nest, data)[[1]])
+```
+
+Also, can do this with `map`:
+```{r}
+map(pull(weather_nest, data), weather_lm)
+```
+
+Again, to avoid the creation of a dedicated function using `map`’s syntax for “anonymous” (i.e. not named and saved) functions. This is helpful for really short operations – here, rather than writing a separate (named) function that takes the argument df and returns a regression of tmax on tmin.
+
+I can use `\(df)` to indicate that same function. If you have a one-line function, this is a good option; otherwise creating a named function is probably better.
+```{r}
+map(pull(weather_nest, data), \(df) lm(tmax ~ tmin, data = df))
+```
+
+Let’s use mutate to fit this model, and to store the result in the same dataframe.
+```{r}
+weather_nest = 
+  weather_nest |> 
+  mutate(models = map(data, weather_lm))
+
+weather_nest
+```
+
+
+## Using iteration for data import
+
+Create a dataframe that includes the list of all files in that directory and the complete path to each file. 
+Then, map over paths and import data using the read_csv function. 
+Finally, unnest the result of map.
+```{r}
+full_df = 
+  tibble(
+    files = list.files("data/exp_data/"),
+    path = str_c("data/exp_data/", files)
+  ) %>% 
+  mutate(data = map(path, read_csv)) %>% 
+  unnest()
+```
+
+Tides the data using string manipulations on the file, converting from wide to long, and selecting relevant variables.
+```{r}
+tidy_df = 
+  full_df %>% 
+  mutate(
+    files = str_replace(files, ".csv", ""),
+    group = str_sub(files, 1, 3)) %>% 
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    values_to = "outcome",
+    names_prefix = "week_") %>% 
+  mutate(week = as.numeric(week)) %>% 
+  select(group, subj = files, week, outcome)
+```
+
+Finally, the code chunk below creates a plot showing individual data, faceted by group.
+```{r}
+tidy_df %>% 
+  ggplot(aes(x = week, y = outcome, group = subj, color = group)) + 
+  geom_point() + 
+  geom_path() + 
+  facet_grid(~group)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
 
