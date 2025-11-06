@@ -14,18 +14,17 @@ source("sim_mean_sd.R")
 
 We can "simulate" by running our function.
 ```{r}
-sim_mean_sd(n = 400)
+sim_mean_sd(n_subj = 400)
 ```
-
 
 
 ## Simulation: Mean and SD for one N
 
 ```{r}
-sim_mean_sd = function(n, mu = 2, sigma = 3) {
+sim_mean_sd = function(n_subj, mu = 2, sigma = 3) {
   
   sim_data = tibble(
-    x = rnorm(n, mean = mu, sd = sigma),
+    x = rnorm(n = n_subj, mean = mu, sd = sigma),
   )
   
   sim_data |> 
@@ -36,6 +35,9 @@ sim_mean_sd = function(n, mu = 2, sigma = 3) {
 }
 ```
 
+Can I verify the Central Limit Theorem?
+
+First try with a 'for' loop
 ```{r}
 output = vector("list", 100)
 

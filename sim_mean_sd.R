@@ -6,10 +6,10 @@
 #'
 #' @returns tibble with sample mean and sample sd
 
-sim_mean_sd = function(n, mu = 2, sigma = 3) {
+sim_mean_sd = function(n_subj, mu = 2, sigma = 3) {
   
   sim_data = tibble(
-    x = rnorm(n, mean = mu, sd = sigma),
+    x = rnorm(n = n_subj, mean = mu, sd = sigma),
   )
   
   sim_data |> 

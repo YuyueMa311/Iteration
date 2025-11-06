@@ -1,28 +1,55 @@
----
-title: "writing_functions"
-output: github_document
----
+writing_functions
+================
 
-```{r}
+``` r
 library(tidyverse)
+```
+
+    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+    ## ✔ dplyr     1.1.4     ✔ readr     2.1.5
+    ## ✔ forcats   1.0.0     ✔ stringr   1.5.1
+    ## ✔ ggplot2   3.5.2     ✔ tibble    3.3.0
+    ## ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
+    ## ✔ purrr     1.1.0     
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
+    ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+
+``` r
 library(rvest)
+```
+
+    ## 
+    ## Attaching package: 'rvest'
+    ## 
+    ## The following object is masked from 'package:readr':
+    ## 
+    ##     guess_encoding
+
+``` r
 library(xml2)
 
 set.seed(1)
-
 ```
-
 
 ## My First Function
 
-
-```{r}
+``` r
 x_vec = rnorm(25, mean = 5, sd = 3)
 
 (x_vec - mean(x_vec)) / sd(x_vec)
 ```
+
+    ##  [1] -0.83687228  0.01576465 -1.05703126  1.50152998  0.16928872 -1.04107494
+    ##  [7]  0.33550276  0.59957343  0.42849461 -0.49894708  1.41364561  0.23279252
+    ## [13] -0.83138529 -2.50852027  1.00648110 -0.22481531 -0.19456260  0.81587675
+    ## [19]  0.68682298  0.44756609  0.78971253  0.64568566 -0.09904161 -2.27133861
+    ## [25]  0.47485186
+
 Write a function to compute z-score:
-```{r}
+
+``` r
 z_scores = function(x) {
   
   z = (x - mean(x)) / sd(x)
@@ -33,27 +60,53 @@ z_scores = function(x) {
 z_scores(x_vec)
 ```
 
+    ##  [1] -0.83687228  0.01576465 -1.05703126  1.50152998  0.16928872 -1.04107494
+    ##  [7]  0.33550276  0.59957343  0.42849461 -0.49894708  1.41364561  0.23279252
+    ## [13] -0.83138529 -2.50852027  1.00648110 -0.22481531 -0.19456260  0.81587675
+    ## [19]  0.68682298  0.44756609  0.78971253  0.64568566 -0.09904161 -2.27133861
+    ## [25]  0.47485186
+
 Ways not working:
-```{r}
+
+``` r
 z_scores(3) # input just one number cannot get standard deviation
 ```
 
+    ## [1] NA
+
 non-numeric variable
-```{r, error = TRUE}
+
+``` r
 z_scores("my name is jeff")
 ```
 
+    ## Warning in mean.default(x): argument is not numeric or logical: returning NA
 
-```{r, error = TRUE}
+    ## Error in x - mean(x): non-numeric argument to binary operator
+
+``` r
 z_scores(iris)
 ```
 
-```{r}
+    ## Warning in mean.default(x): argument is not numeric or logical: returning NA
+
+    ## Warning in Ops.factor(left, right): '-' not meaningful for factors
+
+    ## Error in is.data.frame(x): 'list' object cannot be coerced to type 'double'
+
+``` r
 z_scores(sample(c(TRUE, FALSE), 25, replace = TRUE))
 ```
 
+    ##  [1] -0.7348469  1.3063945 -0.7348469 -0.7348469  1.3063945  1.3063945
+    ##  [7] -0.7348469 -0.7348469 -0.7348469  1.3063945  1.3063945 -0.7348469
+    ## [13] -0.7348469 -0.7348469 -0.7348469 -0.7348469 -0.7348469  1.3063945
+    ## [19] -0.7348469 -0.7348469 -0.7348469 -0.7348469  1.3063945  1.3063945
+    ## [25]  1.3063945
+
 Checking! inside function:
-```{r}
+
+``` r
 z_scores = function(x) {
   
   if (!is.numeric(x)) {
@@ -68,11 +121,9 @@ z_scores = function(x) {
 }
 ```
 
-
 ## Multiple Outputs
 
-
-```{r}
+``` r
 mean_and_sd = function(x) {
   
   if (!is.numeric(x)) {
@@ -90,8 +141,16 @@ mean_and_sd = function(x) {
 
 mean_and_sd(x_vec)
 ```
+
+    ## $mean
+    ## [1] 5.505996
+    ## 
+    ## $sd
+    ## [1] 2.850324
+
 Structure output in a organized way in `tibble`
-```{r}
+
+``` r
 mean_and_sd = function(x) {
   
   if (!is.numeric(x)) {
@@ -112,9 +171,14 @@ mean_and_sd = function(x) {
 mean_and_sd(x_vec)
 ```
 
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  5.51  2.85
 
 ## Multiple inputs
-```{r}
+
+``` r
 sim_data = tibble(
   x = rnorm(30, mean = 3, sd = 2)
 )
@@ -126,15 +190,19 @@ sim_data |>
   )
 ```
 
+    ## # A tibble: 1 × 2
+    ##   mu_hat sigma_hat
+    ##    <dbl>     <dbl>
+    ## 1   2.75      2.04
+
 ## Write function to do simulations:
 
-The inputs are
-* "n_subj" is number of subjects
-* "mu' is the true mean
-* 'sigma' is the true sd
+The inputs are \* “n_subj” is number of subjects \* “mu’ is the true
+mean \* ‘sigma’ is the true sd
 
 Function simulates data from a normal and computes sample mean and sd.
-```{r}
+
+``` r
 sim_mean_sd = function(n_subj, mu = 2, sigma = 3) {
   
   sim_data = tibble(
@@ -150,29 +218,46 @@ sim_mean_sd = function(n_subj, mu = 2, sigma = 3) {
 ```
 
 We can source this function instead of write a function like above.
-```{r}
+
+``` r
 source("sim_mean_sd.R")
 ```
 
+Let’s run this function
 
-
-Let's run this function
-```{r}
+``` r
 sim_mean_sd(n_subj = 400)
+```
+
+    ## # A tibble: 1 × 2
+    ##   mu_hat sigma_hat
+    ##    <dbl>     <dbl>
+    ## 1   2.02      3.02
+
+``` r
 # or like this
 sim_mean_sd(400)
+```
+
+    ## # A tibble: 1 × 2
+    ##   mu_hat sigma_hat
+    ##    <dbl>     <dbl>
+    ## 1   1.98      2.92
+
+``` r
 # We can use positional matching, meaning the first value supplied is taken to be the first argument, the second value is the second argument, and so on.
 ```
-Named matching, which uses the argument name in the function call. 
-Named arguments can be supplied in any order: `sim_mean_sd(n = 30, mu = 5, sd = 1)` is equivalent to `sim_mean_sd(sd = 1, n = 30, mu = 5)`.
 
-
+Named matching, which uses the argument name in the function call. Named
+arguments can be supplied in any order:
+`sim_mean_sd(n = 30, mu = 5, sd = 1)` is equivalent to
+`sim_mean_sd(sd = 1, n = 30, mu = 5)`.
 
 ## Revisiting past examples
 
 ### Loading LoTR data
 
-```{r}
+``` r
 fellowship_ring = readxl::read_excel("./data/LotR_Words.xlsx", range = "B3:D6") |>
   mutate(movie = "fellowship_ring")
 
@@ -193,7 +278,8 @@ lotr_tidy = bind_rows(fellowship_ring, two_towers, return_king) |>
 ```
 
 To turn this import step into a function:
-```{r}
+
+``` r
 lotr_load_and_tidy = function(path, range, movie_name) {
   
   df = 
@@ -218,11 +304,9 @@ lotr_tidy =
     lotr_load_and_tidy("data/LotR_Words.xlsx", "J3:L6", "return_king"))
 ```
 
-
-
 ### NSDUH
 
-```{r}
+``` r
 nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
 
 nsduh_html = read_html(nsduh_url)
@@ -246,7 +330,8 @@ data_marj =
 ```
 
 Write a function to import:
-```{r}
+
+``` r
 nsduh_table <- function(html, table_num, table_name) {
   
   table = 
@@ -272,7 +357,7 @@ nsduh_table <- function(html, table_num, table_name) {
 }
 ```
 
-```{r}
+``` r
 nsduh_results = 
   bind_rows(
     nsduh_table(nsduh_html, 1, "marj_one_year"),
@@ -281,11 +366,12 @@ nsduh_results =
   )
 ```
 
+\##Function as Argument
 
-##Function as Argument
+Input a vector and a function, and returns the result of applying the
+specified function to the vector input.
 
-Input a vector and a function, and returns the result of applying the specified function to the vector input.
-```{r}
+``` r
 x_vec = rnorm(25, 0, 1)
 
 my_summary = function(x, summ_func) {
@@ -295,19 +381,23 @@ my_summary = function(x, summ_func) {
 my_summary(x_vec, sd)
 ```
 
-```{r}
+    ## [1] 0.9537362
+
+``` r
 my_summary(x_vec, IQR)
 ```
 
-```{r}
+    ## [1] 1.00087
+
+``` r
 my_summary(x_vec, var)
 ```
 
+    ## [1] 0.9096127
 
 ## Scoping and names
 
-
-```{r}
+``` r
 f = function(x) {
   z = x + y
   z
@@ -319,21 +409,4 @@ y = 2
 f(x = y)
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ## [1] 4
