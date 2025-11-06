@@ -132,6 +132,7 @@ The inputs are
 * "n_subj" is number of subjects
 * "mu' is the true mean
 * 'sigma' is the true sd
+
 Function simulates data from a normal and computes sample mean and sd.
 ```{r}
 sim_mean_sd = function(n_subject, mu = 2, sigma = 3) {
@@ -147,6 +148,13 @@ sim_mean_sd = function(n_subject, mu = 2, sigma = 3) {
     )
 }
 ```
+
+We can source this function instead of write a function like above.
+```{r}
+source("sim_mean_sd.R")
+```
+
+
 
 Let's run this function
 ```{r}
