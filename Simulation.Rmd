@@ -284,6 +284,8 @@ bday_sim_results =
   summarize(
     prob_repeat = mean(result)
   )
+
+bday_sim_results
 ```
 
 plot this

@@ -412,7 +412,24 @@ bday_sim_results =
   summarize(
     prob_repeat = mean(result)
   )
+
+bday_sim_results
 ```
+
+    ## # A tibble: 46 × 2
+    ##    bdays prob_repeat
+    ##    <int>       <dbl>
+    ##  1     5      0.0324
+    ##  2     6      0.0388
+    ##  3     7      0.0624
+    ##  4     8      0.0712
+    ##  5     9      0.0956
+    ##  6    10      0.130 
+    ##  7    11      0.138 
+    ##  8    12      0.163 
+    ##  9    13      0.183 
+    ## 10    14      0.232 
+    ## # ℹ 36 more rows
 
 plot this
 
